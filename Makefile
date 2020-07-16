@@ -34,3 +34,9 @@ docker-druid-setup:
 
 docker-up: docker-druid-setup
 	docker-compose -f ../druid/distribution/docker/docker-compose.yml up -d
+
+docker-build:
+	@rm -fr build/
+	@mkdir -p build/
+	@git clone https://github.com/apache/druid.git build/
+	docker build -t rh/druid:latest .
