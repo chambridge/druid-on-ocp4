@@ -1,0 +1,108 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: druid-historical
+  labels:
+    app: druid
+    component: historical
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: druid
+      component: historical
+      release: druid
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: druid
+        component: historical
+        release: druid
+    spec:
+      containers:
+        - resources: {}
+          readinessProbe:
+            httpGet:
+              path: /status/health
+              port: 8083
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: druid
+          livenessProbe:
+            httpGet:
+              path: /status/health
+              port: 8083
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: DRUID_MAXDIRECTMEMORYSIZE
+              value: 400m
+            - name: DRUID_XMS
+              value: 512m
+            - name: DRUID_XMX
+              value: 512m
+            - name: druid_processing_buffer_sizeBytes
+              value: '50000000'
+            - name: druid_processing_numMergeBuffers
+              value: '2'
+            - name: druid_processing_numThreads
+              value: '1'
+          ports:
+            - name: http
+              containerPort: 8083
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: data
+              mountPath: /var/druid/
+          terminationMessagePolicy: File
+          envFrom:
+            - configMapRef:
+                name: druid
+          image: 'apache/druid:0.18.1'
+          args:
+            - historical
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: druid
+                    component: historical
+                    release: druid
+                topologyKey: kubernetes.io/hostname
+      schedulerName: default-scheduler
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        creationTimestamp: null
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 4Gi
+        volumeMode: Filesystem
+      status:
+        phase: Pending
+  serviceName: druid-historical
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  revisionHistoryLimit: 10

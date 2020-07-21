@@ -1,0 +1,75 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: druid-coordinator
+  labels:
+    app: druid
+    component: coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: druid
+      component: coordinator
+      release: druid
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: druid
+        component: coordinator
+        release: druid
+    spec:
+      containers:
+        - resources: {}
+          readinessProbe:
+            httpGet:
+              path: /status/health
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: druid
+          livenessProbe:
+            httpGet:
+              path: /status/health
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: DRUID_XMS
+              value: 256m
+            - name: DRUID_XMX
+              value: 256m
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          terminationMessagePolicy: File
+          envFrom:
+            - configMapRef:
+                name: druid
+          image: 'apache/druid:0.18.1'
+          args:
+            - coordinator
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

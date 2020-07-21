@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: druid-router
+  labels:
+    app: druid
+    component: router
+    release: druid
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8888
+      targetPort: http
+  selector:
+    app: druid
+    component: router
+    release: druid
+  type: ClusterIP
+  sessionAffinity: None

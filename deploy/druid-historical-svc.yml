@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: druid-historical
+  labels:
+    app: druid
+    component: historical
+    release: druid
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8083
+      targetPort: http
+  selector:
+    app: druid
+    component: historical
+    release: druid
+  type: ClusterIP
+  sessionAffinity: None

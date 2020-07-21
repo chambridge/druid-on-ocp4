@@ -1,0 +1,119 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: druid-postgresql
+  labels:
+    app: postgresql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+      release: druid
+      role: master
+  template:
+    metadata:
+      name: druid-postgresql
+      creationTimestamp: null
+      labels:
+        app: postgresql
+        release: druid
+        role: master
+    spec:
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Gi
+      containers:
+        - resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-c'
+                - '-e'
+                - >
+                  exec pg_isready -U "druid" -d "druid" -h 127.0.0.1 -p 5432
+
+                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f
+                  /bitnami/postgresql/.initialized ]
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          terminationMessagePath: /dev/termination-log
+          name: druid-postgresql
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - '-c'
+                - exec pg_isready -U "druid" -d "druid" -h 127.0.0.1 -p 5432
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 6
+          env:
+            - name: BITNAMI_DEBUG
+              value: 'false'
+            - name: POSTGRESQL_PORT_NUMBER
+              value: '5432'
+            - name: POSTGRESQL_VOLUME_DIR
+              value: /bitnami/postgresql
+            - name: PGDATA
+              value: /bitnami/postgresql/data
+            - name: POSTGRES_USER
+              value: druid
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: druid-postgresql
+                  key: postgresql-password
+            - name: POSTGRES_DB
+              value: druid
+            - name: POSTGRESQL_ENABLE_LDAP
+              value: 'no'
+          securityContext:
+            runAsUser: 1001
+          ports:
+            - name: tcp-postgresql
+              containerPort: 5432
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: data
+              mountPath: /bitnami/postgresql
+          terminationMessagePolicy: File
+          image: 'docker.io/bitnami/postgresql:11.7.0-debian-10-r9'
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext:
+        fsGroup: 1001
+      schedulerName: default-scheduler
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        creationTimestamp: null
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 8Gi
+        volumeMode: Filesystem
+      status:
+        phase: Pending
+  serviceName: druid-postgresql-headless
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  revisionHistoryLimit: 10

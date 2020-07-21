@@ -1,0 +1,108 @@
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: druid-middle-manager
+  labels:
+    app: druid
+    component: middle-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: druid
+      component: middle-manager
+      release: druid
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: druid
+        component: middle-manager
+        release: druid
+    spec:
+      containers:
+        - resources: {}
+          readinessProbe:
+            httpGet:
+              path: /status/health
+              port: 8091
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: druid
+          livenessProbe:
+            httpGet:
+              path: /status/health
+              port: 8091
+              scheme: HTTP
+            initialDelaySeconds: 60
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: DRUID_XMS
+              value: 64m
+            - name: DRUID_XMX
+              value: 64m
+            - name: druid_indexer_fork_property_druid_processing_buffer_sizeBytes
+              value: '25000000'
+            - name: druid_indexer_runner_javaOptsArray
+              value: >-
+                ["-server", "--Xms256m", "-Xmx256m",
+                "-XX:MaxDirectMemorySize=300m", "-Duser.timezone=UTC",
+                "-Dfile.encoding=UTF-8", "-XX:+ExitOnOutOfMemoryError",
+                "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"]
+          ports:
+            - name: http
+              containerPort: 8091
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: data
+              mountPath: /var/druid/
+          terminationMessagePolicy: File
+          envFrom:
+            - configMapRef:
+                name: druid
+          image: 'apache/druid:0.18.1'
+          args:
+            - middleManager
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: druid
+                    component: middle-manager
+                    release: druid
+                topologyKey: kubernetes.io/hostname
+      schedulerName: default-scheduler
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        creationTimestamp: null
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 4Gi
+        volumeMode: Filesystem
+      status:
+        phase: Pending
+  serviceName: druid-middle-manager
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  revisionHistoryLimit: 10
