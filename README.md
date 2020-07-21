@@ -54,3 +54,8 @@ python scripts/query.py  -a < account_id > -s < source_uuid >
 oc project <project>
 make setup-pull-secret
 ```
+
+2. Deploy Druid on OpenShift
+```
+make deploy-druid
+```

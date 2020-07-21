@@ -1,0 +1,19 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: druid-postgresql-headless
+  labels:
+    app: postgresql
+    release: druid
+spec:
+  ports:
+    - name: tcp-postgresql
+      protocol: TCP
+      port: 5432
+      targetPort: tcp-postgresql
+  selector:
+    app: postgresql
+    release: druid
+  clusterIP: None
+  type: ClusterIP
+  sessionAffinity: None

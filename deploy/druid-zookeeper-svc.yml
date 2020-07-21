@@ -1,0 +1,18 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: druid-zookeeper
+  labels:
+    app: zookeeper
+    release: druid
+spec:
+  ports:
+    - name: client
+      protocol: TCP
+      port: 2181
+      targetPort: client
+  selector:
+    app: zookeeper
+    release: druid
+  type: ClusterIP
+  sessionAffinity: None

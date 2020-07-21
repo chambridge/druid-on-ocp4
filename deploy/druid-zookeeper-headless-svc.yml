@@ -1,0 +1,28 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: druid-zookeeper-headless
+  labels:
+    app: zookeeper
+    release: druid
+spec:
+  ports:
+    - name: client
+      protocol: TCP
+      port: 2181
+      targetPort: client
+    - name: election
+      protocol: TCP
+      port: 3888
+      targetPort: election
+    - name: server
+      protocol: TCP
+      port: 2888
+      targetPort: server
+  selector:
+    app: zookeeper
+    release: druid
+  clusterIP: None
+  type: ClusterIP
+  sessionAffinity: None
+  publishNotReadyAddresses: true

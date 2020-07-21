@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: druid-broker
+  labels:
+    app: druid
+    component: broker
+    release: druid
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8082
+      targetPort: http
+  selector:
+    app: druid
+    component: broker
+    release: druid
+  type: ClusterIP
+  sessionAffinity: None

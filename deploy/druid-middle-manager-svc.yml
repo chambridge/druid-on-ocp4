@@ -1,0 +1,20 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: druid-middle-manager
+  labels:
+    app: druid
+    component: middle-manager
+    release: druid
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8091
+      targetPort: http
+  selector:
+    app: druid
+    component: middle-manager
+    release: druid
+  type: ClusterIP
+  sessionAffinity: None
